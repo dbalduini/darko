@@ -1,0 +1,40 @@
+version: '3'
+
+services:
+  redis:
+    image: redis
+    ports:
+      - "6379:6379"
+
+  darko-master:
+    image: darko:latest
+    env_file:
+      - compose.env
+    ports:
+    - "8888:8888"
+    environment:
+      - DARKO_HA_MASTER_NODE=true
+      - DARKO_HA_MASTER_PORT=8888
+    depends_on:
+      - redis
+
+  darko-1:
+    image: darko:latest
+    env_file:
+      - compose.env
+    depends_on:
+      - redis
+
+  darko-2:
+    image: darko:latest
+    env_file:
+      - compose.env
+    depends_on:
+      - redis
+
+  darko-3:
+    image: darko:latest
+    env_file:
+      - compose.env
+    depends_on:
+      - redis
