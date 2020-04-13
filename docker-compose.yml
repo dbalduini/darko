@@ -20,6 +20,8 @@ services:
 
   darko-follower-1:
     image: darko:latest
+    environment:
+      - RATE_LIMIT=33
     env_file:
       - compose.env
     depends_on:
@@ -27,6 +29,8 @@ services:
 
   darko-follower-2:
     image: darko:latest
+    environment:
+      - RATE_LIMIT=33
     env_file:
       - compose.env
     depends_on:
@@ -34,6 +38,8 @@ services:
 
   darko-follower-3:
     image: darko:latest
+    environment:
+      - RATE_LIMIT=33
     env_file:
       - compose.env
     depends_on:

@@ -56,8 +56,8 @@ func (h *jobHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// get the correct shard to send the job
 	shards, _ := h.queue.ShardCount()
-
 	p := shard.GetPartitionKey(job, shards)
 	topic := fmt.Sprintf("%s:%s", fifo.TopicJobsNew, p)
 

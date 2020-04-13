@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/dbalduini/darko/http"
 	"log"
 	"os"
 	"os/signal"
@@ -13,6 +12,7 @@ import (
 	"github.com/dbalduini/darko/clients"
 	"github.com/dbalduini/darko/dotenv"
 	"github.com/dbalduini/darko/fifo"
+	"github.com/dbalduini/darko/http"
 	"github.com/dbalduini/darko/ratelimit"
 )
 
