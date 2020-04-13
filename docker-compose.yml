@@ -18,21 +18,21 @@ services:
     depends_on:
       - redis
 
-  darko-1:
+  darko-follower-1:
     image: darko:latest
     env_file:
       - compose.env
     depends_on:
       - redis
 
-  darko-2:
+  darko-follower-2:
     image: darko:latest
     env_file:
       - compose.env
     depends_on:
       - redis
 
-  darko-3:
+  darko-follower-3:
     image: darko:latest
     env_file:
       - compose.env
