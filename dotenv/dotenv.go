@@ -115,5 +115,5 @@ func MustGet(key string) Env {
 
 // GetBool returns the value for the key as bool if present or false otherwise
 func GetBool(key string) bool {
-	return GetOrElse(key, "false") == "true"
+	return GetOrElse(key, "false").String() == "true"
 }
