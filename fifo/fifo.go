@@ -2,7 +2,6 @@ package fifo
 
 import (
 	"errors"
-	"github.com/dbalduini/darko/shard"
 )
 
 var (
@@ -12,17 +11,13 @@ var (
 	TopicJobsNew       = "darko:jobs:new"
 	TopicJobsProcessed = "darko:jobs:processed"
 	TopicJobsFailed    = "darko:jobs:failed"
-	TopicShardsNode    = "darko:shards:node"
+
 )
 
 // Queue defines a FIFO queue interface
 type Queue interface {
 	// Pop dequeue the next item of the topic.
-	Pop(topic string) (shard.Job, error)
+	Pop(topic string) (string, error)
 	// Push enqueues the item,
-	Push(topic string, p shard.Job) error
-
-	AddShardNode() (int, error)
-
-	ShardCount() (int, error)
+	Push(topic string, pack string) error
 }

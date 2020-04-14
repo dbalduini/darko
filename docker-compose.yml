@@ -9,38 +9,35 @@ services:
   darko-master:
     image: darko:latest
     env_file:
-      - compose.env
+      - master.env
     ports:
     - "8888:8888"
+    depends_on:
+      - redis
+
+  darko-follower-0:
+    image: darko:latest
+    env_file:
+      - follower.env
     environment:
-      - DARKO_HA_MASTER_NODE=true
-      - DARKO_HA_MASTER_PORT=8888
+      - DARKO_RATE_LIMIT_SHARD=0
     depends_on:
       - redis
 
   darko-follower-1:
     image: darko:latest
-    environment:
-      - RATE_LIMIT=33
     env_file:
-      - compose.env
+      - follower.env
+    environment:
+      - DARKO_RATE_LIMIT_SHARD=1
     depends_on:
       - redis
 
   darko-follower-2:
     image: darko:latest
-    environment:
-      - RATE_LIMIT=33
     env_file:
-      - compose.env
-    depends_on:
-      - redis
-
-  darko-follower-3:
-    image: darko:latest
+      - follower.env
     environment:
-      - RATE_LIMIT=33
-    env_file:
-      - compose.env
+      - DARKO_RATE_LIMIT_SHARD=2
     depends_on:
       - redis

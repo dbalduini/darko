@@ -3,21 +3,21 @@ package http
 import (
 	"encoding/json"
 	"fmt"
+	uuid "github.com/satori/go.uuid"
 	"log"
 	"net/http"
 	"sync"
 
 	"github.com/dbalduini/darko/fifo"
-	"github.com/dbalduini/darko/shard"
 )
 
 // StartServer starts a http server to create new jobs.
 // On HA mode, the master will up the http server to receive new jobs.
 // On standalone mode, the server and the queue listener will run on the same process.
-func StartServer(wg *sync.WaitGroup, port string, queue fifo.Queue) *http.Server {
+func StartServer(wg *sync.WaitGroup, port string, queue fifo.Queue, shards int) *http.Server {
 	srv := &http.Server{Addr: ":" + port}
 
-	http.Handle("/jobs", &jobHandler{queue})
+	http.Handle("/jobs", &jobHandler{queue, shards})
 
 	go func() {
 		defer wg.Done() // let main know we are done cleaning up
@@ -32,14 +32,13 @@ func StartServer(wg *sync.WaitGroup, port string, queue fifo.Queue) *http.Server
 }
 
 type jobHandler struct {
-	queue fifo.Queue
+	queue  fifo.Queue
+	shards int
 }
 
 func (h *jobHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	var job shard.Job
+	var job fifo.Job
 	var id string
-
-	log.Printf("%s\t%s", req.Method, req.URL.Path)
 
 	if req.Method != "POST" {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -51,17 +50,23 @@ func (h *jobHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if job.PK == "" {
+	if job.PrimaryKey == "" {
 		http.Error(w, "primary_key cannot be empty", http.StatusBadRequest)
 		return
 	}
 
-	// get the correct shard to send the job
-	shards, _ := h.queue.ShardCount()
-	p := shard.GetPartitionKey(job, shards)
-	topic := fmt.Sprintf("%s:%s", fifo.TopicJobsNew, p)
+	// get the correct partition to send the job
+	pk := job.Hash() % h.shards
 
-	if err := h.queue.Push(topic, job); err != nil {
+	// set job info
+	job.ID = uuid.NewV4().String()
+	job.PartitionKey = pk
+
+	data, _ := fifo.Pack(job)
+
+	// put the job on the queue
+	topic := fmt.Sprintf("%s:%d", fifo.TopicJobsNew, pk)
+	if err := h.queue.Push(topic, data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

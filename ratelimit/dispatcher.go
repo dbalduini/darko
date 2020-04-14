@@ -3,12 +3,12 @@ package ratelimit
 import (
 	"context"
 	"errors"
+	"github.com/dbalduini/darko/fifo"
 	"log"
 	"sync"
 	"time"
 
 	"github.com/dbalduini/darko/http"
-	"github.com/dbalduini/darko/shard"
 )
 
 const (
@@ -19,11 +19,11 @@ const (
 var (
 	ErrMaxWorkers = errors.New("max number of workers allowed is 99")
 
-	template = "(shard=%02d)(worker=%02d)(token=%d)(pk=%s)(corr=%s)(status=%d)(time=%.3fs)"
+	template = "(shard=%02d)(worker=%02d)(token=%d)(job=%s)(corr=%s)(status=%d)(time=%.3fs)"
 )
 
 // Work is a channel of Jobs
-type Work chan shard.Job
+type Work chan fifo.Job
 
 // Dispatcher uses round robin to dispatch messages
 type Dispatcher struct {
@@ -33,19 +33,7 @@ type Dispatcher struct {
 	wg        sync.WaitGroup
 }
 
-// NewDispatcher returns a new Dispatcher already started.
-func NewDispatcher(ctx context.Context, points int, nrWorkers int) *Dispatcher {
-	// create a new filled token bucket
-	bucket := NewTokenBucket(points)
-	bucket.Fill()
-	defer bucket.StartRefresher(ctx, time.Second)
-	// create dispatcher and spawn workers
-	dispatcher := newDispatcher(nrWorkers, bucket)
-	dispatcher.spawnWorkers(ctx)
-	return dispatcher
-}
-
-func newDispatcher(nrWorkers int, bucket *TokenBucket) *Dispatcher {
+func NewDispatcher(nrWorkers int, bucket *TokenBucket) *Dispatcher {
 	if nrWorkers > MaxWorkersCount {
 		log.Fatalln("max workers allowed is 99")
 	}
@@ -56,18 +44,18 @@ func newDispatcher(nrWorkers int, bucket *TokenBucket) *Dispatcher {
 	}
 }
 
-// Dispatch the payload to the correct shard worker.
-func (d *Dispatcher) Dispatch(job shard.Job) {
+// Dispatch the payload to the correct partition worker.
+func (d *Dispatcher) Dispatch(job fifo.Job) {
 	i := selectWorkerIndex(job, d.nrWorkers)
 	d.workers[i] <- job
 }
 
 // selectWorkerIndex returns the worker id to process the current Job based on the hash of the Job
-func selectWorkerIndex(j shard.Job, n int) int {
+func selectWorkerIndex(j fifo.Job, n int) int {
 	return j.Hash() % n
 }
 
-func (d *Dispatcher) spawnWorkers(ctx context.Context) {
+func (d *Dispatcher) SpawnWorkers(ctx context.Context) {
 	d.wg = sync.WaitGroup{}
 	for i := 0; i < d.nrWorkers; i++ {
 		d.wg.Add(1)
@@ -107,15 +95,15 @@ func (w *worker) run(wg *sync.WaitGroup) {
 	}()
 }
 
-func (w *worker) deliverWithRateLimiter(job shard.Job) {
+func (w *worker) deliverWithRateLimiter(job fifo.Job) {
 	tk := w.bucket.Take()
 
 	start := time.Now()
-	status, err := http.PostCallback(job)
-	end := time.Since(start).Seconds()
+	status, err := http.PostCallback(job.CallbackURL, job.NewPayloadReader())
 	if err != nil {
-		log.Println(err)
+		log.Println("PostCallback error", err)
 	}
+	end := time.Since(start).Seconds()
 
-	log.Printf(template, job.PartitionKey, w.id, tk, job.PK, job.CorrelationID, status, end)
+	log.Printf(template, job.PartitionKey, w.id, tk, job.ID, job.CorrelationID, status, end)
 }

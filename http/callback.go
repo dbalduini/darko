@@ -1,17 +1,14 @@
 package http
 
 import (
-	"bytes"
 	"crypto/tls"
-	"encoding/json"
-	"github.com/dbalduini/darko/shard"
 	"io"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"time"
 )
 
+// transport is tuned for single host connection pool
 var transport = &http.Transport{
 	TLSClientConfig:     &tls.Config{InsecureSkipVerify: true},
 	MaxIdleConns:        100,
@@ -23,24 +20,17 @@ var transport = &http.Transport{
 var tuneHTTPClient = &http.Client{Transport: transport}
 
 // PostCallback calls the callback url with the payload
-func PostCallback(job shard.Job) (int, error) {
-	url := os.Getenv("CALLBACK_URL")
-
-	buf, err := json.Marshal(&job)
+func PostCallback(url string, body io.Reader) (int, error) {
+	req, err := http.NewRequest("POST", url, body)
 	if err != nil {
-		return -1, err
-	}
-
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(buf))
-	if err != nil {
-		return -1, err
+		return 0, err
 	}
 
 	req.Header.Add("Content-Type", "application/json")
 
 	res, err := tuneHTTPClient.Do(req)
 	if err != nil {
-		return -1, err
+		return 0, err
 	}
 
 	defer res.Body.Close()

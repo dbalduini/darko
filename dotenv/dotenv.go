@@ -14,6 +14,20 @@ var (
 	quoteSurroundedRegexp = regexp.MustCompile(`^['"]|['"]$`)
 )
 
+type Env string
+
+func (e Env) Int() int {
+	i, err := strconv.Atoi(string(e))
+	if err != nil {
+		panic(err)
+	}
+	return i
+}
+
+func (e Env) String() string {
+	return string(e)
+}
+
 // LoadEnvFromConfigFile loads dotenv from "CONFIG_FILE" environment variable if it is set.
 func LoadEnvFromConfigFile() error {
 	if f, ok := os.LookupEnv("CONFIG_FILE"); ok {
@@ -84,31 +98,22 @@ func Validate(vars []string) (string, bool) {
 }
 
 // GetOrElse returns the value for the environment value or the default value.
-func GetOrElse(key, defaultValue string) string {
+func GetOrElse(key, defaultValue string) Env {
 	if v, ok := os.LookupEnv(key); ok {
-		return v
+		return Env(v)
 	}
-	return defaultValue
+	return Env(defaultValue)
 }
 
-// Get returns the value for the key if present or panic otherwise
-func Get(key string) string {
+// MustGet returns the value for the key if present or panic otherwise
+func MustGet(key string) Env {
 	if v, ok := os.LookupEnv(key); ok {
-		return v
+		return Env(v)
 	}
 	panic(1)
 }
 
-// GetInt returns the value for the key as int if present or panic otherwise
-func GetInt(key string) int {
-	i, err := strconv.Atoi(Get(key))
-	if err != nil {
-		panic(err)
-	}
-	return i
-}
-
 // GetBool returns the value for the key as bool if present or false otherwise
 func GetBool(key string) bool {
-	return Get(key) == "true"
+	return GetOrElse(key, "false") == "true"
 }
