@@ -7,7 +7,7 @@ To avoid this, you may choose to drop the requests. This is also known as *leak 
 
 If your application is allowed to drop the requests, then you don't need darko or any other external rate limiter.
 
-**darko** is a scalable rate limiter that gives you:
+**darko** is a scalable *token bucket rate limiter* that gives you:
 - Guaranteed order on the requests
 - No data loss
 - Vertical scale
@@ -46,3 +46,4 @@ See more about redis persistence [here](https://redis.io/topics/persistence).
 - Improve logging
 - Dynamic scale of followers
 - Monitoring (maybe Prometheus)
+- Fix standalone image
