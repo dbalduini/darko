@@ -40,3 +40,9 @@ If your application is allowed to drop the requests, then you don't need darko o
 To avoid the loss of data, set the redis db persistence to AOF.
 
 See more about redis persistence [here](https://redis.io/topics/persistence).
+
+## TODO
+
+- Improve logging
+- Dynamic scale of followers
+- Monitoring (maybe Prometheus)
